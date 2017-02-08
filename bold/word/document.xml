@@ -9,6 +9,7 @@
       </w:pPr>
       <w:r>
         <w:rPr>
+          <w:b/>
           <w:lang w:val="en-US"/>
         </w:rPr>
         <w:t>Test</w:t>
