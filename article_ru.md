@@ -1,40 +1,41 @@
-# Как я разбирал docx с помощью XSLT
+# Parsing docx with the help of XSLT
 
-Задача обработки документов в формате docx, а также таблиц xlsx и презентаций pptx является весьма нетривиальной. В этой статье расскажу как научиться парсить, создавать и обрабатывать такие документы используя только XSLT и ZIP архиватор.
+The task of handling documents in docx format, xlsx tables and pptx presentations is complicated. This article is about parsing, creating and editing documents using only the XSLT and ZIP archiver.
 <cut />
-## Зачем?
-docx - самый популярный формат документов, поэтому задача отдавать информацию пользователю в этом формате всегда может возникнуть. Один из вариантов решения этой проблемы - использование готовой библиотеки, может не подходить по ряду причин:
-- библиотеки может просто не существовать
-- в проекте не нужен ещё один чёрный ящик
-- ограничения библиотеки по платформам и т.п.
-- проблемы с лицензированием
-- скорость работы
+What for?
+docx – is the most popular document format , so the output of information in this format always can be required. Candidate solution to this problem is to use a ready-made library, but it can be inappropriate for several reasons:
+- library may not exist
+- project does not need another black box 
+- restrictions of the library by the platforms, etc.
+- licensing problems 
+- working speed
 
-Поэтому в этой статье будем использовать только самые базовые инструменты для работы с docx документом.
+So, only basic tools for working with the docx document will be used in this article.
 
-## Структура docx
-Для начала разоберёмся с тем, что собой представляет docx документ. docx это zip архив который физически содержит 2 типа файлов:
-- xml файлы с расширениями `xml` и `rels`
-- медиа файлы  (изображения и т.п.)
+## Docx structure
+What is a docx document? A docx file is a zip archive which physically contains 2 types of files:
+- xml files with `xml` and `rels` extensions
+- media files (images, etc.)
 
-А логически - 3 вида элементов:
-- Типы (Content Types) - список типов медиа файлов (например png) встречающихся в документе и типов частей документов (например документ, верхний колонтитул).
-- Части (Parts) - отдельные части документа, для нашего документа это document.xml, сюда входят как xml документы так и медиа файлы.
-- Связи (Relationships) идентифицируют части документа для ссылок (например связь между разделом документа и колонтитулом), а также тут определены внешние части (например гиперссылки).
+And logically - 3 types of elements:
+- Content Types - a type list of media files (e.g. png) used in the document and document parts (e.g. a document, a page header).
+- Parts - separate document parts. For our document - it is document.xml, including xml documents and media files.
+- Relationships identify document parts for links (e.g. communication between document section and page header), and also external parts are defined here (e.g. hyperlinks).
 
-Они подробно описаны в стандарте [ECMA-376: Office Open XML File Formats](http://www.ecma-international.org/publications/standards/Ecma-376.htm), основная часть которого - [PDF документ](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-376,%20Fifth%20Edition,%20Part%201%20-%20Fundamentals%20And%20Markup%20Language%20Reference.zip) на 5000 страниц, и ещё 2000 страниц бонусного контента.
 
-## Минимальный docx
+It is described in detail in the [ECMA-376: Office Open XML File Formats](http://www.ecma-international.org/publications/standards/Ecma-376.htm), the main part of it is a [PDF document](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-376,%20Fifth%20Edition,%20Part%201%20-%20Fundamentals%20And%20Markup%20Language%20Reference.zip) consists of 5,000 pages and 2,000 more pages of bonus content.
 
-[Простейший docx](https://github.com/eduard93/docx/releases/download/v1.0.0/minimal.docx) после распаковки выглядит следующим образом
+## Minimal docx
+
+[The simplest docx](https://github.com/eduard93/docx/releases/download/v1.0.0/minimal.docx) after unpacking looks like:
 
 ![image](https://habrastorage.org/files/ce5/f66/840/ce5f66840d3f4df484e083998829618c.PNG)
 
-Давайте [посмотрим](https://github.com/eduard93/docx/commit/5313b19d6b14392fee217f66afb11866fe738067) из чего он состоит.
+Let's take a [look](https://github.com/eduard93/docx/commit/5313b19d6b14392fee217f66afb11866fe738067) what it consists of.
 
 #### [Content_Types].xml
 
-Находится в корне документа и перечисляет MIME типы содержимого документа:
+It is located in document root and lists MIME types of document content:
 
 ```xml
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -47,7 +48,7 @@ docx - самый популярный формат документов, поэ
 
 #### _rels/.rels
 
-Главный список связей документа. В данном случае определена всего одна связь - сопоставление с идентификатором rId1 и файлом word/document.xml - основным телом документа.
+The main list of document links. In this case, only one defined link - matching rId1 identifier and word/document.xml file - the main body of the document.
 ```xml
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
     <Relationship 
@@ -58,7 +59,7 @@ docx - самый популярный формат документов, поэ
 ```
 
 #### word/document.xml
-[Основное содержимое документа](http://www.datypic.com/sc/ooxml/e-w_document.html).
+[Main document content](http://www.datypic.com/sc/ooxml/e-w_document.html).
 <spoiler title="word/document.xml">
 ```xml
 <w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas"
@@ -97,84 +98,84 @@ docx - самый популярный формат документов, поэ
 ```
 </spoiler>
 
-Здесь:
-- `<w:document>` - сам документ
--  `<w:body>` - тело документа
-- `<w:p>` - параграф
-- `<w:r>` - run (фрагмент) текста
-- `<w:t>` - сам текст
-- `<w:sectPr>` - описание страницы
+Here:
+- `<w:document>` - document itself
+-  `<w:body>` - document body
+- `<w:p>` - paragraph
+- `<w:r>` - run (fragment) of the text
+- `<w:t>` - text itself
+- `<w:sectPr>` - page description
 
-Если открыть этот документ в текстовом редакторе, то увидим документ из одного слова `Test`.
+When you open this document in a text editor, you will see (document with) a single word `Test`.
 
 #### word/_rels/document.xml.rels
-Здесь содержится список связей части `word/document.xml`. Название файла связей создаётся из названия части документа к которой он относится и добавления к нему расширения `rels`. Папка с файлом связей называется `_rels` и находится на том же уровне, что и часть к которой он относится. Так как связей в `word/document.xml` никаких нет то и в файле пусто:
+It contains a list of links of `word/document.xml`. Name of link file is created from title of document part, to which it relates, and adding `rels` extension. A folder with link file called `_rels`, it is at the same level as a part to which it relates. There is no links in `word/document.xml`, so the file is empty:
 
 ```xml
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 </Relationships>
 ```
-Даже если связей нет, этот файл должен существовать.
+Even if there is no links, file must exist.
 
 ## docx и Microsoft Word
-[docx](https://github.com/eduard93/docx/releases/download/v1.0.0/word.docx) созданный с помощью Microsoft Word, да в принципе и с помощью любого другого редактора имеет [несколько дополнительных файлов](https://github.com/eduard93/docx/commit/5313b19d6b14392fee217f66afb11866fe738067).
+[docx](https://github.com/eduard93/docx/releases/download/v1.0.0/word.docx) created with Microsoft Word or any other editor has [several additional files](https://github.com/eduard93/docx/commit/5313b19d6b14392fee217f66afb11866fe738067).
 
 ![image](https://habrastorage.org/files/585/503/504/58550350424d4977910f9424a4af3104.PNG)
 
-Вот что в них содержится:
-- `docProps/core.xml` - основные метаданные документа согласно [Open Packaging Conventions](https://en.wikipedia.org/wiki/Open_Packaging_Conventions) и Dublin Core [[1]](http://dublincore.org/documents/dcmi-terms/), [[2]](http://dublincore.org/documents/dces/).
--  `docProps/app.xml` - [общая информация о документе](http://www.datypic.com/sc/ooxml/e-extended-properties_Properties.html): количество страниц, слов, символов, название приложения в котором был создан документ и т.п.
-- `word/settings.xml` - [настройки относящиеся к текущему документу](http://www.datypic.com/sc/ooxml/e-w_settings.html).
-- `word/styles.xml` - [стили](http://www.datypic.com/sc/ooxml/e-w_styles.html) применимые к документу. Отделяют данные от представления.
-- `word/webSettings.xml` - [настройки](http://www.datypic.com/sc/ooxml/e-w_webSettings.html) отображения HTML частей документа и настройки того, как конвертировать документ в HTML.
-- `word/fontTable.xml` - [список](http://www.datypic.com/sc/ooxml/e-w_fonts.html) шрифтов используемых в документе.
-- `word/theme1.xml` - [тема](http://www.datypic.com/sc/ooxml/e-a_theme.html) (состоит из цветовой схемы, шрифтов и форматирования).
+Contents of files: 
+- `docProps/core.xml` - the basic document metadata according to  [Open Packaging Conventions](https://en.wikipedia.org/wiki/Open_Packaging_Conventions) and Dublin Core  [[1]](http://dublincore.org/documents/dcmi-terms/), [[2]](http://dublincore.org/documents/dces/).
+-  `docProps/app.xml` - [general information about document](http://www.datypic.com/sc/ooxml/e-extended-properties_Properties.html): number of pages, words, characters, application name in which document was created, etc.
+- `word/settings.xml` - [settings for the current document](http://www.datypic.com/sc/ooxml/e-w_settings.html).
+- `word/styles.xml` - [styles](http://www.datypic.com/sc/ooxml/e-w_styles.html) applied to the document.  Separate data from representation.
+- `word/webSettings.xml` - HTML display [settings](http://www.datypic.com/sc/ooxml/e-w_webSettings.html) of document part and document conversion settings to HTML. 
+- `word/fontTable.xml` - [list](http://www.datypic.com/sc/ooxml/e-w_fonts.html) of document fonts.
+- `word/theme1.xml` - [theme](http://www.datypic.com/sc/ooxml/e-a_theme.html) (consists of color schemes, fonts, and formatting).
 
-В сложных документах частей может быть гораздо больше.
+Complex documents can have much more parts.
 
-## Реверс-инжиниринг docx
+## Reverse engineering docx
 
-Итак, первоначальная задача - узнать как какой-либо фрагмент документа хранится в xml, чтобы потом создавать (или парсить) подобные документы самостоятельно. Для этого нам понадобятся:
-- Архиватор zip
-- Библиотека для форматирования XML (Word выдаёт XML без отступов, одной строкой)
-- Средство для просмотра diff между файлами, я буду использовать git и TortoiseGit
+So, the initial task is to find out how any document fragment is stored in xml, then to create (or parse) such documents on their own. We need:
+- Zip Archiver
+- Library for XML formatting (Word gives XML without indents, one line)
+- A tool for viewing diff between files, I use git and TortoiseGit
 
-#### Инструменты
-- Под Windows: [zip](http://gnuwin32.sourceforge.net/packages/zip.htm),  [unzip](http://gnuwin32.sourceforge.net/packages/unzip.htm), [libxml2](http://xmlsoft.org/downloads.html), [git](https://git-scm.com/download/win), [TortoiseGit](https://tortoisegit.org/download/)
-- Под Linux: ```apt-get install zip unzip libxml2 libxml2-utils git```
+#### Tools
+- For Windows:  [zip](http://gnuwin32.sourceforge.net/packages/zip.htm),  [unzip](http://gnuwin32.sourceforge.net/packages/unzip.htm), [libxml2](http://xmlsoft.org/downloads.html), [git](https://git-scm.com/download/win), [TortoiseGit](https://tortoisegit.org/download/)
+- For Linux: ```apt-get install zip unzip libxml2 libxml2-utils git```
 
-Также понадобятся [скрипты](https://github.com/eduard93/docx/commit/6b41b0e459329d62d0736aa6dc5a7b02e7398dcd) для автоматического (раз)архивирования и форматирования XML.
-Использование под Windows:
--  `unpack file dir` - распаковывает документ `file` в папку `dir` и форматирует xml
--  `pack dir file` - запаковывает папку `dir` в документ `file` 
+Also [scripts](https://github.com/eduard93/docx/commit/6b41b0e459329d62d0736aa6dc5a7b02e7398dcd) will be necessary for automatic archiving/dearching and XML formatting. 
+Using on Windows:
+-  `unpack file dir` - unpacks document `file` in folder `dir` and formats xml
+-  `pack dir file` - pack folder `dir` in document `file`
 
-Использование под Linux аналогично, только `./unpack.sh` вместо `unpack`, а `pack` становится `./pack`.
+Using on Linux is similar, but `./unpack.sh` instead of `unpack`, `pack` becomes `./pack`.
 
-#### Использование
+#### Use
 
-Поиск изменений происходит следующим образом:
-1. Создаём пустой docx файл в редакторе.
-2. Распаковываем его с помощью `unpack` в новую папку.
-3. Коммитим новую папку.
-4. Добавляем в файл из п. 1. изучаемый элемент (гиперссылку, таблицу и т.д.).
-5. Распаковываем изменённый файл в уже существующую папку.
-6. Изучаем diff, убирая ненужные изменения (перестановки связей, порядок пространств имён и т.п.).
-7. Запаковываем папку и проверяем что получившийся файл открывается.
-8. Коммитим изменённую папку.
+Search changes:
+1. Create a blank docx file in the editor. 
+2. Unpack it using unpack in new folder. 
+3. Commits new folder. 
+4. Add to file from step 1. explored element (hyperlink, table, etc.). 
+5. Unpack modified file into an existing folder. 
+6. Explore diff, removing unnecessary changes (links permutation, order of namespaces, etc.). 
+7. Packs folder and check opening of final file. 
+8. Commit changed folder.
 
-#### Пример 1. Выделение текста жирным
+#### Example 1. Text selection bold
 
-Посмотрим на практике, как найти тег который определяет форматирование текста жирным шрифтом.
+Finding of tag that defines text formatting in bold.
 
-1. Создаём документ `bold.docx` с обычным (не жирным) текстом Test.
-2. Распаковываем его: `unpack bold.docx bold`.
-3. [Коммитим результат](https://github.com/eduard93/docx/commit/910ea3fb0f1667ce2722da491b27c4e12474c8ec).
-4. Выделяем текст Test жирным.
-5. Распаковываем `unpack bold.docx bold`.
-6. Изначально diff выглядел следующим образом: 
+1.	Create `bold.docx` document with normal (not bold) text `Test`.
+2.	Unpack it: `unpack bold.docx bold`.
+3.	[Commit the result](https://github.com/eduard93/docx/commit/910ea3fb0f1667ce2722da491b27c4e12474c8ec).
+4.	Select Test in bold.
+5.	Unpack it: `unpack bold.docx bold`.
+6.	Initially, the diff was as follows:
 
 ![diff](https://habrastorage.org/files/059/659/38c/05965938c8c64bbea20cb47fb5c6d457.PNG)
-Рассмотрим его подробно:
+In detail: 
 
 #### docProps/app.xml
 
@@ -183,7 +184,7 @@ docx - самый популярный формат документов, поэ
 -  <TotalTime>0</TotalTime>
 +  <TotalTime>1</TotalTime>
 ```
-Изменение времени нам не нужно.
+Time change is not necessary.
 
 #### docProps/core.xml
 ```diff
@@ -194,8 +195,8 @@ docx - самый популярный формат документов, поэ
 -  <dcterms:modified xsi:type="dcterms:W3CDTF">2017-02-07T19:37:00Z</dcterms:modified>
 +  <dcterms:modified xsi:type="dcterms:W3CDTF">2017-02-08T10:01:00Z</dcterms:modified>
 ```
-Изменение версии документа и даты модификации нас также не интересует.
- 
+Change document version and modification date is not necessary.
+
 #### word/document.xml
 <spoiler title="diff">
 ```diff
@@ -225,12 +226,12 @@ docx - самый популярный формат документов, поэ
 ```
 </spoiler>
 
-Изменения в  `w:rsidR` не интересны - это внутренняя информация для Microsoft Word. Ключевое изменение тут
+Changes in `w:rsidR` are unnecessary - it is inside information for Microsoft Word. A key change here:
 ```diff
          <w:rPr>
 +          <w:b/>
 ```
-в параграфе с Test.  Видимо элемент `<w:b/>` и делает текст жирным. Оставляем это изменение и отменяем остальные.
+in the paragraph with Test. Apparently element `<w:b/>` makes the text bold. Reserve this change and cancel the rest.
 
 #### word/settings.xml
 
@@ -241,19 +242,19 @@ docx - самый популярный формат документов, поэ
 +    <w:rsid w:val="00F752CF"/>
 ```
 
-Также не содержит ничего относящегося к жирному тексту. Отменяем.
+It does not contain anything relating to the bold text. Cancel.
 
-7 Запаковываем папку с 1м изменением (добавлением `<w:b/>`) и проверяем что [документ](https://github.com/eduard93/docx/releases/download/v1.0.0/bold.docx) открывается и показывает то, что ожидалось.
-8 [Коммитим изменение](https://github.com/eduard93/docx/commit/17f1dca258c44d87e8563b86a7e515b01bd4cee0).
+7 Pack a folder with 1m change (adding `<w:b/>`) and check that [document](https://github.com/eduard93/docx/releases/download/v1.0.0/bold.docx) opens and shows what was expected.
+8 [Commit the change](https://github.com/eduard93/docx/commit/17f1dca258c44d87e8563b86a7e515b01bd4cee0).
 
-#### Пример 2. Нижний колонтитул
+#### Example 2. Footer
 
-Теперь разберём пример посложнее - добавление нижнего колонтитула.
-[Вот первоначальный коммит](https://github.com/eduard93/docx/commit/0cd149e7cdab4e816a82a9128dbc5cfe89d74a97). Добавляем нижний колонтитул с текстом 123 и распаковываем документ. Такой diff получается первоначально:
+Complex example - adding footer.
+[Initial commit](https://github.com/eduard93/docx/commit/0cd149e7cdab4e816a82a9128dbc5cfe89d74a97). Add footer text ‘123’ and unpack the document. Such initial diff looks like: 
 
 ![diff](https://habrastorage.org/files/478/e62/048/478e62048c12443481a00783f164bebe.PNG)
 
-Сразу же исключаем изменения в `docProps/app.xml` и `docProps/core.xml` - там тоже самое, что и в первом примере.
+Immediately exclude changes in `docProps/app.xml` and `docProps/core.xml` – the same as in the first example.
 
 #### [Content_Types].xml
 
@@ -266,16 +267,16 @@ docx - самый популярный формат документов, поэ
 +  <Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>
 ```
 
-footer явно выглядит как то, что нам нужно, но что делать с footnotes и endnotes? Являются ли они обязательными при добавлении нижнего колонтитула или их создали заодно? Ответить на этот вопрос не всегда просто, вот основные пути:
-- Посмотреть, связаны ли изменения друг с другом
-- Экспериментировать
-- Ну а если совсем не понятно что происходит:
+footer looks clearly like what we need, but what we should do with footnotes and endnotes? Are they required by adding footer, or created them at the same time? The answer is not always easy, here are the basic ways: 
+- View changes: are they connected with each other?
+- Experiment
+- Well, if you do not understand what`s happening: 
 
-![Читать документацию](http://www.commitstrip.com/wp-content/uploads/2015/06/Strip-Lire-la-documentation-650-finalenglish.jpg)
-Идём пока что дальше.
+![Read the documentation](http://www.commitstrip.com/wp-content/uploads/2015/06/Strip-Lire-la-documentation-650-finalenglish.jpg)
+Let`s go further.
 
 #### word/_rels/document.xml.rels
-Изначально diff выглядит вот так:
+Initial diff looks like:
 
 <spoiler title="diff">
 ```diff
@@ -295,14 +296,14 @@ footer явно выглядит как то, что нам нужно, но ч�
  </Relationships>
 ```
 </spoiler>
-Видно, что часть изменений связана с тем, что Word изменил порядок связей, уберём их:
+We see that some of changes are due to fact that Word has changed link order, remove them:
 ```diff
 @@ -3,6 +3,9 @@
 +  <Relationship Id="rId6" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>
 +  <Relationship Id="rId7" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/endnotes" Target="endnotes.xml"/>
 +  <Relationship Id="rId8" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes" Target="footnotes.xml"/>
 ```
-Опять появляются footer, footnotes, endnotes. Все они связаны с основным документом, перейдём к нему:
+footer, footnotes, endnotes appear again. All of them are connected with main document, take a look at it: 
 
 #### word/document.xml
 ```diff
@@ -319,7 +320,7 @@ footer явно выглядит как то, что нам нужно, но ч�
        <w:docGrid w:linePitch="360"/>
      </w:sectPr>
 ```
-Редкий случай когда есть только нужные изменения. Видна явная ссылка на footer из [sectPr](http://www.datypic.com/sc/ooxml/e-w_sectPr-3.html). А так как ссылок в документе на footnotes и endnotes нет, то можно предположить что они нам не понадобятся.
+There are only necessary changes – a clear link to footer from [sectPr](http://www.datypic.com/sc/ooxml/e-w_sectPr-3.html). There are no links to footnotes and endnotes in document, so we can assume links are not necessary.
 
 #### word/settings.xml
 <spoiler title="diff">
@@ -353,7 +354,7 @@ footer явно выглядит как то, что нам нужно, но ч�
 +    <w:rsid w:val="001B0DE6"/>
 ```
 </spoiler>
-А вот и появились ссылки на footnotes, endnotes добавляющие их в документ.
+Here are links to footnotes, endnotes which add them to document. 
 
 #### word/styles.xml
 
@@ -412,11 +413,11 @@ footer явно выглядит как то, что нам нужно, но ч�
  </w:styles>
 ```
 </spoiler>
-Изменения в стилях нас интересуют только если мы ищем как поменять стиль. В данном случае это изменение можно убрать.
+We are interested in style changes, only if we are looking for how to change style. In this case, this change can be removed.
 
 #### word/footer1.xml
 
-Посмотрим теперь собственно на сам нижний колонтитул (часть пространств имён опущена для читабельности, но в документе они должны быть): 
+Take a look at footer itself (some namespaces are omitted for readability, but in the document they should be):
 
 ```xml
 <w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
@@ -430,53 +431,52 @@ footer явно выглядит как то, что нам нужно, но ч�
   </w:p>
 </w:ftr>
 ```
-Тут виден текст 123. Единственное, что надо исправить - убрать ссылку на `<w:pStyle w:val="a6"/>`.
+Here is text: ‘123’. We need only one – remove the link to `<w:pStyle w:val="a6"/>`. 
 
-В результате анализа всех изменений делаем следующие предположения:
-- footnotes и endnotes не нужны
-- В `[Content_Types].xml` надо добавить footer
-- В `word/_rels/document.xml.rels` надо добавить ссылку на footer
-- В `word/document.xml` в тег `<w:sectPr>` надо добавить `<w:footerReference>`
+The analysis of all the changes makes the following assumptions:
+- footnotes and endnotes are unnecessary
+- In `[Content_Types].xml` we need to add footer
+- In `word/_rels/document.xml.rels` we need to add a link to footer
+- In `word/document.xml` to `<w:sectPr>` tag we need to add `<w:footerReference>`
 
-Уменьшаем diff до этого набора изменений:
+Reduce the diff to this set of changes:
 
 ![final diff](https://habrastorage.org/files/5d3/4fc/b84/5d34fcb8479244b198bc82507f61100a.PNG)
 
-Затем запаковываем [документ](https://github.com/eduard93/docx/releases/download/v1.0.0/footer.docx) и открываем его. 
-Если всё сделано правильно, то документ откроется и в нём будет нижний колонтитул с текстом 123. А вот и итоговый [коммит](https://github.com/eduard93/docx/commit/1f794a5cdba458b60466d8c1ca9a16e252b44e59).
+Then pack [document](https://github.com/eduard93/docx/releases/download/v1.0.0/footer.docx) and open it. If everything was done correctly, the document will be opened and there will be footer with text ‘123’. And here is the final [commit](https://github.com/eduard93/docx/commit/1f794a5cdba458b60466d8c1ca9a16e252b44e59).
 
-Таким образом процесс поиска изменений сводится к поиску минимального набора изменений, достаточного для достижения заданного результата.
+Thus, the process of change detection is reduced to find a minimum set of changes sufficient to achieve the desired result.
 
-## Практика
+## Practice
 
-Найдя интересующее нас изменение, логично перейти к следующему этапу, это может быть что-либо из:
-- Создания docx
-- Парсинг docx
-- Преобразования docx  
+If we find necessary change, it is logical to proceed to the next stage, it could be any of:
+- Create  docx
+- Parse docx
+- Convert docx
 
-Тут нам потребуются знания [XSLT](https://ru.wikipedia.org/wiki/XSLT) и [XPath](https://ru.wikipedia.org/wiki/XPath). 
+Here we need [XSLT](https://ru.wikipedia.org/wiki/XSLT) and [XPath](https://ru.wikipedia.org/wiki/XPath). 
 
-Давайте напишем достаточно простое преобразование - замену или добавление нижнего колонтитула в существующий документ. Писать я буду на языке Caché ObjectScript, но даже если вы не знаете - не беда. В основном будем вызовать XSLT и архиватор. Ничего более. Итак, приступим.
+Let's write a fairly simple conversion - replacement or addition of footer in the current document. I'm going to write in Caché ObjectScript, but even if you do not know this language - it does not matter. Basically, we will call XSLT and archiver, nothing more. So, let's start.
 
-### Алгоритм
-Алгоритм выглядит следующим образом:
-1. Распаковываем документ
-2. Добавляем наш нижний колонтитул
-3. Прописываем ссылку на него в `[Content_Types].xml` и `word/_rels/document.xml.rels`
-4. В `word/document.xml` в тег `<w:sectPr>` добавляем тег `<w:footerReference>` или заменяем в нём ссылку на наш нижний колонтитул.
-5. Запаковываем документ
+### Algorithm
+Algorithm looks like:
+1. Unpack the document
+2. Add our footer 
+3. Prescribe a link to it in `[Content_Types].xml` and `word/_rels/document.xml.rels` 
+4. In `word/document.xml` to `<w:sectPr>` tag add `<w:footerReference>` tag or replace a link in it to our footer
+5. Pack the document.
 
-Приступим.
+Let`s start.
 
-#### Распаковка
+#### Unpacking
 
-В Caché ObjectScript есть возможность выполнять команды ОС с помощью функции [$zf(-1, oscommand)](http://docs.intersystems.com/latest/csp/docbook/DocBook.UI.Page.cls?KEY=RCOS_fzf-1). Вызовем unzip для распаковки документа с помощью [обёртки над $zf(-1)](https://github.com/intersystems-ru/Converter/blob/master/Converter/Common.cls.xml#L11):
+In Caché ObjectScript it is possible to execute operating system commands using the function [$zf(-1, oscommand)](http://docs.intersystems.com/latest/csp/docbook/DocBook.UI.Page.cls?KEY=RCOS_fzf-1). Call unzip to unpack the document using [wrapper over $zf(-1)](https://github.com/intersystems-ru/Converter/blob/master/Converter/Common.cls.xml#L11):
 
 ```cos
-/// Используя %3 (unzip) распаковать файл %1 в папку %2
+/// Using %3 (unzip) unpack file %1 in folder %2
 Parameter UNZIP = "%3 %1 -d %2";
 
-/// Распаковать архив source в папку targetDir
+/// Unpack archive source in folder targetDir
 ClassMethod executeUnzip(source, targetDir) As %Status
 {
     set timeout = 100
@@ -486,14 +486,14 @@ ClassMethod executeUnzip(source, targetDir) As %Status
 
 ```
 
-#### Создаём файл нижнего колонтитула
+#### Creation of footer file
 
-На вход поступает текст нижнего колонтитула, запишем его в файл in.xml:
+Input receives the footer text, we will write it to in.xml file:
 ```xml
 <xml>TEST</xml>
 ```
 
-В XSLT (файл - footer.xsl) будем создавать нижний колонтитул с текстом из тега xml (часть пространств имён опущена, вот [полный список](https://github.com/intersystems-ru/Converter/blob/master/Converter/Footer.cls.xml#L327)): 
+In XSLT (file footer.xsl) we will create footer with text from xml tag (some namespaces are omitted, here is the [full list](https://github.com/intersystems-ru/Converter/blob/master/Converter/Footer.cls.xml#L327)): 
 ```xml
 <xsl:stylesheet 
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
@@ -517,11 +517,11 @@ ClassMethod executeUnzip(source, targetDir) As %Status
 </xsl:stylesheet>
 ```
 
-Теперь вызовем [XSLT преобразователь](http://docs.intersystems.com/latest/csp/documatic/%25CSP.Documatic.cls?PAGE=CLASS&LIBRARY=%25SYS&CLASSNAME=%25XML.XSLT.Transformer#METHOD_TransformFile):
+Call [XSLT converter](http://docs.intersystems.com/latest/csp/documatic/%25CSP.Documatic.cls?PAGE=CLASS&LIBRARY=%25SYS&CLASSNAME=%25XML.XSLT.Transformer#METHOD_TransformFile):
 ```cos
 do ##class(%XML.XSLT.Transformer).TransformFile("in.xml", "footer.xsl", footer0.xml")    
 ```
-В результате получится файл нижнего колонтитула `footer0.xml`: 
+The result is the footer file `footer0.xml`:
 ```xml
 <w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
     <w:p>
@@ -535,10 +535,10 @@ do ##class(%XML.XSLT.Transformer).TransformFile("in.xml", "footer.xsl", footer0.
 </w:ftr>
 ```
 
-#### Добавляем ссылку на колонтитул в список связей основного документа
+#### Add a footer link to a list of links of the main document
 
-Сссылки с идентификатором `rId0` как правило не существует. Впрочем можно использовать XPath для получения идентификатора которого точно не существует. 
-Добавляем ссылку на `footer0.xml` c идентификатором rId0   в `word/_rels/document.xml.rels`:
+The link with `rId0` ID doesn't exist generally. However, you can use XPath to get the ID which does not exist. 
+Add a link to `footer0.xml` with rId0 ID in `word/_rels/document.xml.rels`:
 
 <spoiler title="XSLT">
 ```xml
@@ -561,9 +561,10 @@ do ##class(%XML.XSLT.Transformer).TransformFile("in.xml", "footer.xsl", footer0.
 ```
 </spoiler>
 
-#### Прописываем ссылки в документе
+#### Specify links in document
 
-Далее надо в каждый тег `<w:sectPr>` добавить тег `<w:footerReference>` или заменить в нём ссылку на наш нижний колонтитул. [Оказалось](https://msdn.microsoft.com/en-us/library/documentformat.openxml.wordprocessing.footerreference(v=office.14).aspx), что у каждого тега `<w:sectPr>` может быть 3 тега `<w:footerReference>` - для первой страницы, четных страниц и всего остального:
+Next, it is necessary in each `<w:sectPr>` tag add `<w:footerReference>` tag or replace a link in it to our footer. [It turns out](https://msdn.microsoft.com/en-us/library/documentformat.openxml.wordprocessing.footerreference(v=office.14).aspx) that each of `<w:sectPr>` tag may have 3 `<w:footerReference>` tags - for the first page, even pages and the rest:
+
 <spoiler title="XSLT">
 ```xml
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
@@ -591,9 +592,9 @@ version="1.0">
 ```
 </spoiler>
 
-#### Добавляем колонтитул в `[Content_Types].xml`
+#### Add footer in `[Content_Types].xml`
 
-Добавляем в `[Content_Types].xml` информацию о том, что `/word/footer0.xml` имеет тип `application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml`:
+Add in `[Content_Types].xml` information that `/word/footer0.xml` has a type of `application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml`:
 
 <spoiler title="XSLT">
 ```xml
@@ -616,29 +617,29 @@ version="1.0">
 </spoiler>
 
 
-#### В результате
+#### As a result
 
-Весь код [опубликован](https://github.com/intersystems-ru/Converter/blob/master/Converter/Footer.cls.xml). Работает он так:
+Full code is  [published](https://github.com/intersystems-ru/Converter/blob/master/Converter/Footer.cls.xml). It works like this:
 ```cos
 do ##class(Converter.Footer).modifyFooter("in.docx", "out.docx", "TEST")
 ```
-Где:
-- `in.docx` - исходный документ
-- `out.docx` - выходящий документ
-- `TEST` - текст, который добавляется в нижний колонтитул
+Where:
+- `in.docx` - original document
+- `out.docx` - final document
+- `TEST` - text which is added to footer
 
-## Выводы
+## Conclusions
 
-Используя только XSLT и ZIP можно успешно работать с документами docx, таблицами xlsx и презентациями pptx.
+Using only XSLT and ZIP, you can successfully work with docx documents, xlsx tables and pptx presentations.
 
-## Открытые вопросы
+## Open questions
 
-1. Изначально хотел использовать 7z вместо zip/unzip т..к. это одна утилита и она более распространена на Windows. Однако я столкнулся с такой проблемой, что документы запакованные 7z под Linux не открываются в Microsoft Office. Я попробовал достаточно много [вариантов](http://7zip.bugaco.com/7zip/MANUAL/switches/index.htm) вызова, однако положительного результата добиться не удалось.
-2. Ищу XSD со схемами ECMA-376 версии 5 и комментариями. XSD версии 5 без комментариев доступен к загрузке на сайте ECMA, но без комментариев в нём сложно разобраться. XSD версии 2 с комментариями доступен к загрузке.
+1. Initially I wanted to use 7z instead of zip/unzip, as it is one tool and more common on Windows. However, I faced with such problem that documents packed 7z on Linux do not open in Microsoft Office. I tried to call a lot of [options](http://7zip.bugaco.com/7zip/MANUAL/switches/index.htm), but failed to achieve a positive result.
+2. I`m looking for XSD with schemas ECMA-367 of version 5 and comments. The fifth XSD version is available for downloading on ECMA site. But it is difficult to understand it without any comments. The second XSD version with comments is available for downloading.
 
-## Ссылки
+## Links
 - [ECMA-376](http://www.ecma-international.org/publications/standards/Ecma-376.htm)
-- [Описание docx](https://msdn.microsoft.com/en-us/library/aa338205.aspx)
-- [Подробная статья про docx](https://www.toptal.com/xml/an-informal-introduction-to-docx)
-- [Репозиторий со скриптами](https://github.com/eduard93/docx)
-- [Репозиторий с преобразователем нижнего колонтитула](https://github.com/intersystems-ru/Converter/)
+- [docx discription](https://msdn.microsoft.com/en-us/library/aa338205.aspx)
+- [Detailed article about docx](https://www.toptal.com/xml/an-informal-introduction-to-docx)
+- [Repository with scripts](https://github.com/eduard93/docx)
+- [Repository with footerconverter](https://github.com/intersystems-ru/Converter/)
