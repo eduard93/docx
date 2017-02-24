@@ -1,7 +1,7 @@
 # Parsing docx with the help of XSLT
 
 The task of handling office documents, namely docx documents, xlsx tables and pptx presentations is quite complicated. This article is about parsing, creating and editing documents using only XSLT and ZIP.
-<cut />
+
 Why?
 docx is the most popular document format, so the ability to generate and parse this format  can always can be useful. The solution in a form of a ready-made library, can be inappropriate for several reasons:
 - library may not exist
@@ -14,16 +14,16 @@ So, in this article I would use only basic tools for working with the docx docum
 
 ## Docx structure
 What is a docx document? A docx file is a zip archive which physically contains 2 types of files:
-- xml files with `xml` and `rels` extensions
+- xml files with `xml` or `rels` extensions
 - media files (images, etc.)
 
-And logically - 3 types of elements:
-- Content Types - a type list of media files (e.g. png) used in the document and document parts (e.g. a document, a page header).
-- Parts - separate document parts. For our document - it is document.xml, including xml documents and media files.
-- Relationships identify document parts for links (e.g. communication between document section and page header), and also external parts are defined here (e.g. hyperlinks).
+And logically of 3 types of elements:
+- Content Types - a list of media types (e.g. png) used in the document and document parts (e.g. document, page header).
+- Parts - separate document parts. For docx document it is `document.xml`, including xml documents and media files.
+- Relationships identify document parts for linkage (e.g. connection between document section and page header), external parts are also defined here (e.g. hyperlinks).
 
 
-It is described in detail in the [ECMA-376: Office Open XML File Formats](http://www.ecma-international.org/publications/standards/Ecma-376.htm), the main part of it is a [PDF document](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-376,%20Fifth%20Edition,%20Part%201%20-%20Fundamentals%20And%20Markup%20Language%20Reference.zip) consists of 5,000 pages and 2,000 more pages of bonus content.
+It is described in detail in the [ECMA-376: Office Open XML File Formats](http://www.ecma-international.org/publications/standards/Ecma-376.htm), the main part of it is the [PDF document](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-376,%20Fifth%20Edition,%20Part%201%20-%20Fundamentals%20And%20Markup%20Language%20Reference.zip) consisting of 5,000 pages, there are also 2,000 pages of bonus content.
 
 ## Minimal docx
 
@@ -31,11 +31,10 @@ It is described in detail in the [ECMA-376: Office Open XML File Formats](http:/
 
 ![image](https://habrastorage.org/files/ce5/f66/840/ce5f66840d3f4df484e083998829618c.PNG)
 
-Let's take a [look](https://github.com/eduard93/docx/commit/5313b19d6b14392fee217f66afb11866fe738067) what it consists of.
+Let's take a [look](https://github.com/eduard93/docx/commit/5313b19d6b14392fee217f66afb11866fe738067) at it.
 
 #### [Content_Types].xml
-
-It is located in document root and lists MIME types of document content:
+This file is located in document root and lists all MIME types of the document:
 
 ```xml
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -48,7 +47,7 @@ It is located in document root and lists MIME types of document content:
 
 #### _rels/.rels
 
-The main list of document links. In this case, only one defined link - matching rId1 identifier and word/document.xml file - the main body of the document.
+The main list of document links. In this case, only one defined link exists - matching `rId1` identifier and `word/document.xml` file - the main body of the document.
 ```xml
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
     <Relationship 
@@ -60,7 +59,7 @@ The main list of document links. In this case, only one defined link - matching 
 
 #### word/document.xml
 [Main document content](http://www.datypic.com/sc/ooxml/e-w_document.html).
-<spoiler title="word/document.xml">
+
 ```xml
 <w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas"
             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -96,7 +95,6 @@ The main list of document links. In this case, only one defined link - matching 
     </w:body>
 </w:document>
 ```
-</spoiler>
 
 Here:
 - `<w:document>` - document itself
@@ -106,36 +104,36 @@ Here:
 - `<w:t>` - text itself
 - `<w:sectPr>` - page description
 
-When you open this document in a text editor, you will see (document with) a single word `Test`.
+When you open this document in a text editor, you will see a document with a single word `Test`.
 
 #### word/_rels/document.xml.rels
-It contains a list of links of `word/document.xml`. Name of link file is created from title of document part, to which it relates, and adding `rels` extension. A folder with link file called `_rels`, it is at the same level as a part to which it relates. There is no links in `word/document.xml`, so the file is empty:
+Contains a list of links of `word/document.xml` part. Name of link file is created from the name title of document part, to which it belongs, with `rels` extension. A folder with link file is called `_rels`, and it is placed at the same level as a part to which it relates. There is no links in `word/document.xml`, so the file is empty:
 
 ```xml
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 </Relationships>
 ```
-Even if there is no links, file must exist.
+Even if there is no links, this file must exist.
 
-## docx и Microsoft Word
+## docx and Microsoft Word
 [docx](https://github.com/eduard93/docx/releases/download/v1.0.0/word.docx) created with Microsoft Word or any other editor has [several additional files](https://github.com/eduard93/docx/commit/5313b19d6b14392fee217f66afb11866fe738067).
 
 ![image](https://habrastorage.org/files/585/503/504/58550350424d4977910f9424a4af3104.PNG)
 
-Contents of files: 
+These files contain: 
 - `docProps/core.xml` - the basic document metadata according to  [Open Packaging Conventions](https://en.wikipedia.org/wiki/Open_Packaging_Conventions) and Dublin Core  [[1]](http://dublincore.org/documents/dcmi-terms/), [[2]](http://dublincore.org/documents/dces/).
--  `docProps/app.xml` - [general information about document](http://www.datypic.com/sc/ooxml/e-extended-properties_Properties.html): number of pages, words, characters, application name in which document was created, etc.
+-  `docProps/app.xml` - [general information about document](http://www.datypic.com/sc/ooxml/e-extended-properties_Properties.html): number of pages, words, characters, application in which document was created, etc.
 - `word/settings.xml` - [settings for the current document](http://www.datypic.com/sc/ooxml/e-w_settings.html).
-- `word/styles.xml` - [styles](http://www.datypic.com/sc/ooxml/e-w_styles.html) applied to the document.  Separate data from representation.
-- `word/webSettings.xml` - HTML display [settings](http://www.datypic.com/sc/ooxml/e-w_webSettings.html) of document part and document conversion settings to HTML. 
+- `word/styles.xml` - [styles](http://www.datypic.com/sc/ooxml/e-w_styles.html) applied to the document. Separates data from view.
+- `word/webSettings.xml` - HTML display [settings](http://www.datypic.com/sc/ooxml/e-w_webSettings.html)  and document conversion settings to HTML. 
 - `word/fontTable.xml` - [list](http://www.datypic.com/sc/ooxml/e-w_fonts.html) of document fonts.
 - `word/theme1.xml` - [theme](http://www.datypic.com/sc/ooxml/e-a_theme.html) (consists of color schemes, fonts, and formatting).
 
-Complex documents can have much more parts.
+Complex documents usually have more parts.
 
 ## Reverse engineering docx
 
-So, the initial task is to find out how any document fragment is stored in xml, then to create (or parse) such documents on their own. We need:
+The initial task is to find out how any document fragment is stored in xml, then to create (or parse) such documents on our own. We need:
 - Zip Archiver
 - Library for XML formatting (Word gives XML without indents, one line)
 - A tool for viewing diff between files, I use git and TortoiseGit
@@ -149,28 +147,28 @@ Using on Windows:
 -  `unpack file dir` - unpacks document `file` in folder `dir` and formats xml
 -  `pack dir file` - pack folder `dir` in document `file`
 
-Using on Linux is similar, but `./unpack.sh` instead of `unpack`, `pack` becomes `./pack`.
+Using on Linux is similar, but `./unpack.sh` instead of `unpack`, and `pack` becomes `./pack`.
 
 #### Use
 
-Search changes:
-1. Create a blank docx file in the editor. 
-2. Unpack it using unpack in new folder. 
-3. Commits new folder. 
-4. Add to file from step 1. explored element (hyperlink, table, etc.). 
+To search for changes:
+1. Create an empty docx file in the editor. 
+2. Unpack it using `unpack` in new folder. 
+3. Commit new folder. 
+4. Add things you need  (hyperlink, table, etc.) to the document from step 1. 
 5. Unpack modified file into an existing folder. 
 6. Explore diff, removing unnecessary changes (links permutation, order of namespaces, etc.). 
-7. Packs folder and check opening of final file. 
+7. Pack folder and check that it opens. 
 8. Commit changed folder.
 
-#### Example 1. Text selection bold
+#### Example 1. Bold text
 
-Finding of tag that defines text formatting in bold.
+As a first example we'll search for a tag that maxes text bold.
 
 1.	Create `bold.docx` document with normal (not bold) text `Test`.
 2.	Unpack it: `unpack bold.docx bold`.
 3.	[Commit the result](https://github.com/eduard93/docx/commit/910ea3fb0f1667ce2722da491b27c4e12474c8ec).
-4.	Select Test in bold.
+4.	Maske `Test` text bold.
 5.	Unpack it: `unpack bold.docx bold`.
 6.	Initially, the diff was as follows:
 
@@ -195,10 +193,10 @@ Time change is not necessary.
 -  <dcterms:modified xsi:type="dcterms:W3CDTF">2017-02-07T19:37:00Z</dcterms:modified>
 +  <dcterms:modified xsi:type="dcterms:W3CDTF">2017-02-08T10:01:00Z</dcterms:modified>
 ```
-Change document version and modification date is not necessary.
+Document version and modification date changes are irrelevant.
 
 #### word/document.xml
-<spoiler title="diff">
+
 ```diff
 @@ -1,24 +1,26 @@
     <w:body>
@@ -224,14 +222,13 @@ Change document version and modification date is not necessary.
 -    <w:sectPr w:rsidR="0076695C" w:rsidRPr="00290C70">
 +    <w:sectPr w:rsidR="0076695C" w:rsidRPr="00F752CF">
 ```
-</spoiler>
 
-Changes in `w:rsidR` are unnecessary - it is inside information for Microsoft Word. A key change here:
+Changes in `w:rsidR` are unnecessary - it is inside information for Microsoft Word. The main change here:
 ```diff
          <w:rPr>
 +          <w:b/>
 ```
-in the paragraph with Test. Apparently element `<w:b/>` makes the text bold. Reserve this change and cancel the rest.
+in the paragraph with Test. Apparently element `<w:b/>` makes the text bold. Let's remember this change and revert the rest.
 
 #### word/settings.xml
 
@@ -242,19 +239,19 @@ in the paragraph with Test. Apparently element `<w:b/>` makes the text bold. Res
 +    <w:rsid w:val="00F752CF"/>
 ```
 
-It does not contain anything relating to the bold text. Cancel.
+It does not contain anything related to the bold text. Revert.
 
-7 Pack a folder with 1m change (adding `<w:b/>`) and check that [document](https://github.com/eduard93/docx/releases/download/v1.0.0/bold.docx) opens and shows what was expected.
+7 Pack a folder with one relevant change (adding `<w:b/>`) and check that [document](https://github.com/eduard93/docx/releases/download/v1.0.0/bold.docx) opens and shows as expected.
 8 [Commit the change](https://github.com/eduard93/docx/commit/17f1dca258c44d87e8563b86a7e515b01bd4cee0).
 
 #### Example 2. Footer
 
-Complex example - adding footer.
+Let's move on to a more complex example - adding footer.
 [Initial commit](https://github.com/eduard93/docx/commit/0cd149e7cdab4e816a82a9128dbc5cfe89d74a97). Add footer text ‘123’ and unpack the document. Such initial diff looks like: 
 
 ![diff](https://habrastorage.org/files/478/e62/048/478e62048c12443481a00783f164bebe.PNG)
 
-Immediately exclude changes in `docProps/app.xml` and `docProps/core.xml` – the same as in the first example.
+Immediately revert changes in `docProps/app.xml` and `docProps/core.xml` – same as with the first example.
 
 #### [Content_Types].xml
 
@@ -267,18 +264,16 @@ Immediately exclude changes in `docProps/app.xml` and `docProps/core.xml` – th
 +  <Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>
 ```
 
-footer looks clearly like what we need, but what we should do with footnotes and endnotes? Are they required by adding footer, or created them at the same time? The answer is not always easy, here are the basic ways: 
-- View changes: are they connected with each other?
+footer clearly looks like what we need, but what should we do with footnotes and endnotes? Are they required for adding footer, or are the just a byproduct created at the same time? Finding the answer is not always easy, here are the main approaches: 
+- Explore the changes: are they connected with each other?
 - Experiment
-- Well, if you do not understand what`s happening: 
+- Finally, if you do not understand what's going on: 
 
 ![Read the documentation](http://www.commitstrip.com/wp-content/uploads/2015/06/Strip-Lire-la-documentation-650-finalenglish.jpg)
-Let`s go further.
 
 #### word/_rels/document.xml.rels
 Initial diff looks like:
 
-<spoiler title="diff">
 ```diff
 @@ -1,8 +1,11 @@
  <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -295,15 +290,15 @@ Initial diff looks like:
 +  <Relationship Id="rId8" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes" Target="footnotes.xml"/>
  </Relationships>
 ```
-</spoiler>
-We see that some of changes are due to fact that Word has changed link order, remove them:
+
+As we see some of changes are due to fact that Word has changed link order, let's remove them and make diff smaller:
 ```diff
 @@ -3,6 +3,9 @@
 +  <Relationship Id="rId6" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>
 +  <Relationship Id="rId7" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/endnotes" Target="endnotes.xml"/>
 +  <Relationship Id="rId8" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes" Target="footnotes.xml"/>
 ```
-footer, footnotes, endnotes appear again. All of them are connected with main document, take a look at it: 
+footer, footnotes, endnotes appear again. All of them are connected with main document, let's have take a look at it: 
 
 #### word/document.xml
 ```diff
@@ -320,15 +315,14 @@ footer, footnotes, endnotes appear again. All of them are connected with main do
        <w:docGrid w:linePitch="360"/>
      </w:sectPr>
 ```
-There are only necessary changes – a clear link to footer from [sectPr](http://www.datypic.com/sc/ooxml/e-w_sectPr-3.html). There are no links to footnotes and endnotes in document, so we can assume links are not necessary.
+For a change there are only necessary changes – a explicit link to footer in [sectPr](http://www.datypic.com/sc/ooxml/e-w_sectPr-3.html). There are no links to footnotes and endnotes in document, so we can assume links are not necessary.
 
 #### word/settings.xml
-<spoiler title="diff">
 
 ```diff
 @@ -1,19 +1,30 @@
  <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
- <w:settings xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:sl="http://schemas.openxmlformats.org/schemaLibrary/2006/main" mc:Ignorable="w14 w15">
+ <w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
    <w:zoom w:percent="100"/>
 +  <w:proofState w:spelling="clean"/>
    <w:defaultTabStop w:val="708"/>
@@ -353,12 +347,10 @@ There are only necessary changes – a clear link to footer from [sectPr](http:/
 +    <w:rsid w:val="000A7B7B"/>
 +    <w:rsid w:val="001B0DE6"/>
 ```
-</spoiler>
-Here are links to footnotes, endnotes which add them to document. 
+Settings lists links to footnotes, endnotes which adds them to the document. Note that footer does not appear here.
 
 #### word/styles.xml
 
-<spoiler title="diff">
 ```diff
 @@ -480,6 +480,50 @@
        <w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/>
@@ -412,12 +404,12 @@ Here are links to footnotes, endnotes which add them to document.
 +  </w:style>
  </w:styles>
 ```
-</spoiler>
-We are interested in style changes, only if we are looking for how to change style. In this case, this change can be removed.
+
+We are interested in style changes, only if we are looking for style changes. In this case, this change can be reverted.
 
 #### word/footer1.xml
 
-Take a look at footer itself (some namespaces are omitted for readability, but in the document they should be):
+Take a look at footer itself (some namespaces are omitted for readability, but the should appear in the document):
 
 ```xml
 <w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
@@ -431,9 +423,9 @@ Take a look at footer itself (some namespaces are omitted for readability, but i
   </w:p>
 </w:ftr>
 ```
-Here is text: ‘123’. We need only one – remove the link to `<w:pStyle w:val="a6"/>`. 
+Here is the footer text: ‘123’. As we don't track style changes in this example we need to remove the link to `<w:pStyle w:val="a6"/>`. 
 
-The analysis of all the changes makes the following assumptions:
+The analysis of all the changes results in the following assumptions:
 - footnotes and endnotes are unnecessary
 - In `[Content_Types].xml` we need to add footer
 - In `word/_rels/document.xml.rels` we need to add a link to footer
@@ -445,28 +437,29 @@ Reduce the diff to this set of changes:
 
 Then pack [document](https://github.com/eduard93/docx/releases/download/v1.0.0/footer.docx) and open it. If everything was done correctly, the document will be opened and there will be footer with text ‘123’. And here is the final [commit](https://github.com/eduard93/docx/commit/1f794a5cdba458b60466d8c1ca9a16e252b44e59).
 
-Thus, the process of change detection is reduced to find a minimum set of changes sufficient to achieve the desired result.
+Thus, the process of change detection is reduced to determining a minimum set of changes sufficient to achieve the desired result.
 
 ## Practice
 
 If we find necessary change, it is logical to proceed to the next stage, it could be any of:
-- Create  docx
-- Parse docx
-- Convert docx
+- Creating docx
+- Parsing docx
+- Converting docx
 
-Here we need [XSLT](https://ru.wikipedia.org/wiki/XSLT) and [XPath](https://ru.wikipedia.org/wiki/XPath). 
+And for that we need [XSLT](https://ru.wikipedia.org/wiki/XSLT) and [XPath](https://ru.wikipedia.org/wiki/XPath). 
 
-Let's write a fairly simple conversion - replacement or addition of footer in the current document. I'm going to write in Caché ObjectScript, but even if you do not know this language - it does not matter. Basically, we will call XSLT and archiver, nothing more. So, let's start.
+Let's write a fairly simple conversion - replacement or addition of footer for a document.
 
 ### Algorithm
-Algorithm looks like:
+
+Algorithm looks like this:
 1. Unpack the document
 2. Add our footer 
-3. Prescribe a link to it in `[Content_Types].xml` and `word/_rels/document.xml.rels` 
-4. In `word/document.xml` to `<w:sectPr>` tag add `<w:footerReference>` tag or replace a link in it to our footer
+3. Add a link to it to `[Content_Types].xml` and `word/_rels/document.xml.rels` 
+4. In `word/document.xml` in each `<w:sectPr>` tag add or replace `<w:footerReference>` tag with reference to our footer
 5. Pack the document.
 
-Let`s start.
+Let's start.
 
 #### Unpacking
 
@@ -537,10 +530,9 @@ The result is the footer file `footer0.xml`:
 
 #### Add a footer link to a list of links of the main document
 
-The link with `rId0` ID doesn't exist generally. However, you can use XPath to get the ID which does not exist. 
+The link with `rId0` ID  usually does not exist. However, you can use XPath to get the ID which does not exist. 
 Add a link to `footer0.xml` with rId0 ID in `word/_rels/document.xml.rels`:
 
-<spoiler title="XSLT">
 ```xml
 <xsl:stylesheet  xmlns:xsl="http://www.w3.org/1999/XSL/Transform"  xmlns="http://schemas.openxmlformats.org/package/2006/relationships"  version="1.0">
     <xsl:output method="xml" omit-xml-declaration="yes" indent="no"  />
@@ -559,13 +551,11 @@ Add a link to `footer0.xml` with rId0 ID in `word/_rels/document.xml.rels`:
     </xsl:template>
 </xsl:stylesheet>
 ```
-</spoiler>
 
 #### Specify links in document
 
-Next, it is necessary in each `<w:sectPr>` tag add `<w:footerReference>` tag or replace a link in it to our footer. [It turns out](https://msdn.microsoft.com/en-us/library/documentformat.openxml.wordprocessing.footerreference(v=office.14).aspx) that each of `<w:sectPr>` tag may have 3 `<w:footerReference>` tags - for the first page, even pages and the rest:
+Next, it is necessary in each `<w:sectPr>` tag add `<w:footerReference>` tag or replace a link in it with link to our footer. [It turns out](https://msdn.microsoft.com/en-us/library/documentformat.openxml.wordprocessing.footerreference(v=office.14).aspx) that each `<w:sectPr>` tag can have 3 different `<w:footerReference>` tags - for the first page, even pages and the rest:
 
-<spoiler title="XSLT">
 ```xml
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
 xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
@@ -590,13 +580,11 @@ version="1.0">
     </xsl:template>
 </xsl:stylesheet>
 ```
-</spoiler>
 
 #### Add footer in `[Content_Types].xml`
 
-Add in `[Content_Types].xml` information that `/word/footer0.xml` has a type of `application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml`:
+In `[Content_Types].xml` add information that `/word/footer0.xml` is a `application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml`:
 
-<spoiler title="XSLT">
 ```xml
 <xsl:stylesheet  xmlns:xsl="http://www.w3.org/1999/XSL/Transform"  xmlns="http://schemas.openxmlformats.org/package/2006/content-types"  version="1.0">
     <xsl:output method="xml" omit-xml-declaration="yes" indent="no"  />
@@ -614,18 +602,16 @@ Add in `[Content_Types].xml` information that `/word/footer0.xml` has a type of 
     </xsl:template>
 </xsl:stylesheet>
 ```
-</spoiler>
-
 
 #### As a result
 
-Full code is  [published](https://github.com/intersystems-ru/Converter/blob/master/Converter/Footer.cls.xml). It works like this:
+Full code is  [available on GitHub](https://github.com/intersystems-ru/Converter/blob/master/Converter/Footer.cls.xml). It works like this:
 ```cos
 do ##class(Converter.Footer).modifyFooter("in.docx", "out.docx", "TEST")
 ```
 Where:
 - `in.docx` - original document
-- `out.docx` - final document
+- `out.docx` - output document
 - `TEST` - text which is added to footer
 
 ## Conclusions
@@ -634,8 +620,8 @@ Using only XSLT and ZIP, you can successfully work with docx documents, xlsx tab
 
 ## Open questions
 
-1. Initially I wanted to use 7z instead of zip/unzip, as it is one tool and more common on Windows. However, I faced with such problem that documents packed 7z on Linux do not open in Microsoft Office. I tried to call a lot of [options](http://7zip.bugaco.com/7zip/MANUAL/switches/index.htm), but failed to achieve a positive result.
-2. I`m looking for XSD with schemas ECMA-367 of version 5 and comments. The fifth XSD version is available for downloading on ECMA site. But it is difficult to understand it without any comments. The second XSD version with comments is available for downloading.
+1. Do you generate or parce xlsx, docx? If so, how? 
+2. I`m looking for XSD with schemas ECMA-367 of version 5 and comments. The XSD of fifth version is available for download on ECMA site. But it is difficult to comprehend it without any comments. The XSD of the second version is available with comments.
 
 ## Links
 - [ECMA-376](http://www.ecma-international.org/publications/standards/Ecma-376.htm)
