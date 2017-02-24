@@ -1,16 +1,16 @@
 # Parsing docx with the help of XSLT
 
-The task of handling documents in docx format, xlsx tables and pptx presentations is complicated. This article is about parsing, creating and editing documents using only the XSLT and ZIP archiver.
+The task of handling office documents, namely docx documents, xlsx tables and pptx presentations is quite complicated. This article is about parsing, creating and editing documents using only XSLT and ZIP.
 <cut />
-What for?
-docx – is the most popular document format , so the output of information in this format always can be required. Candidate solution to this problem is to use a ready-made library, but it can be inappropriate for several reasons:
+Why?
+docx is the most popular document format, so the ability to generate and parse this format  can always can be useful. The solution in a form of a ready-made library, can be inappropriate for several reasons:
 - library may not exist
-- project does not need another black box 
-- restrictions of the library by the platforms, etc.
-- licensing problems 
-- working speed
+- you do not need another black box in your project 
+- restrictions of the library: platforms, etc.
+- licensing 
+- processing speed
 
-So, only basic tools for working with the docx document will be used in this article.
+So, in this article I would use only basic tools for working with the docx documents.
 
 ## Docx structure
 What is a docx document? A docx file is a zip archive which physically contains 2 types of files:
