@@ -10,7 +10,7 @@ docx is the most popular document format, so the ability to generate and parse t
 - licensing 
 - processing speed
 
-So, in this article I would use only basic tools for work with the docx documents.
+In this article, I would use only basic tools for work with the docx documents.
 
 ## Docx structure
 What is a docx document? A docx file is a zip archive which physically contains 2 types of files:
@@ -141,10 +141,10 @@ The initial task is to find out how any document fragment is stored in xml, then
 - For Windows: [zip](http://gnuwin32.sourceforge.net/packages/zip.htm), [unzip](http://gnuwin32.sourceforge.net/packages/unzip.htm), [libxml2](http://xmlsoft.org/downloads.html), [git](https://git-scm.com/download/win), [TortoiseGit](https://tortoisegit.org/download/)
 - For Linux: `apt-get install zip unzip libxml2 libxml2-utils git`
 
-Also [scripts](https://github.com/eduard93/docx/commit/6b41b0e459329d62d0736aa6dc5a7b02e7398dcd) will be necessary for automatic archiving and XML formatting. 
+Also, [scripts](https://github.com/eduard93/docx/commit/6b41b0e459329d62d0736aa6dc5a7b02e7398dcd) will be necessary for automatic archiving and XML formatting. 
 Usage on Windows:
 -  `unpack file dir` - unpacks document `file` in folder `dir` and formats xml
--  `pack dir file` - pack folder `dir` in document `file`
+-  `pack dir file` - pack folder `dir` into the document `file`
 
 Usage on Linux is similar, but use `./unpack.sh` instead of `unpack`, and `pack` becomes `./pack`.
 
@@ -156,7 +156,7 @@ To search for changes:
 3. Commit new folder. 
 4. Add things you need  (hyperlink, table, etc.) to the document from step 1. 
 5. Unpack modified file into an existing folder. 
-6. Explore diff, removing unnecessary changes (links permutation, order of namespaces, etc.). 
+6. Explore diff, removing unnecessary changes (links permutation, namespace order, etc.). 
 7. Pack folder into document and check that it opens. 
 8. Commit changed folder.
 
@@ -182,7 +182,7 @@ Let's examine it in detail:
 -  <TotalTime>0</TotalTime>
 +  <TotalTime>1</TotalTime>
 ```
-Time change is not necessary.
+The time change is not necessary.
 
 #### docProps/core.xml
 ```diff
@@ -246,7 +246,7 @@ It does not contain anything related to the bold text. Revert.
 
 #### Example 2. Footer
 
-Let's move on to a more complex example - adding footer to document.
+Let's move on to a more complex example - adding a footer to a document.
 [Initial commit](https://github.com/eduard93/docx/commit/0cd149e7cdab4e816a82a9128dbc5cfe89d74a97). Add footer text ‘123’ and unpack the document. Initial diff looks like this: 
 
 ![diff](https://habrastorage.org/files/478/e62/048/478e62048c12443481a00783f164bebe.PNG)
@@ -264,7 +264,7 @@ Immediately revert changes in `docProps/app.xml` and `docProps/core.xml` – sam
 +  <Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>
 ```
 
-footer clearly looks like what we need, but what should we do with footnotes and endnotes? Are they required for adding footer, or are the just a byproduct created at the same time? Discerning the answer is not always easy, here are the main approaches: 
+footer clearly looks like what we need, but what should we do with footnotes and endnotes? Are they required for adding a footer, or are the just a byproduct created at the same time? Discerning the answer is not always easy, here are the main approaches: 
 - Explore the changes: are they connected with each other?
 - Experiment
 - Finally, if you do not understand what's going on: 
@@ -298,7 +298,7 @@ As we see some of the changes are due to the fact that Word has changed links or
 +  <Relationship Id="rId7" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/endnotes" Target="endnotes.xml"/>
 +  <Relationship Id="rId8" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes" Target="footnotes.xml"/>
 ```
-footer, footnotes, endnotes appear again. All of them are connected with main document, let's have take a look at it: 
+footer, footnotes, endnotes appear again. All of them are connected with the main document, let's have a look at it: 
 
 #### word/document.xml
 ```diff
@@ -315,7 +315,7 @@ footer, footnotes, endnotes appear again. All of them are connected with main do
        <w:docGrid w:linePitch="360"/>
      </w:sectPr>
 ```
-For a change there are only necessary changes – an explicit link to footer in [sectPr](http://www.datypic.com/sc/ooxml/e-w_sectPr-3.html). There are no links to footnotes and endnotes in document, so we can assume they are not necessary.
+For a change, there are only necessary changes – an explicit link to the footer in [sectPr](http://www.datypic.com/sc/ooxml/e-w_sectPr-3.html). There are no links to footnotes and endnotes in the document, so we can assume they are not necessary.
 
 #### word/settings.xml
 
@@ -347,7 +347,7 @@ For a change there are only necessary changes – an explicit link to footer in 
 +    <w:rsid w:val="000A7B7B"/>
 +    <w:rsid w:val="001B0DE6"/>
 ```
-Settings lists links to footnotes abd endnotes which presumably adds them to the document. Note that footer does not appear here.
+Settings lists links to footnotes and endnotes which presumably adds them to the document. Note that footer does not appear here.
 
 #### word/styles.xml
 
@@ -405,7 +405,7 @@ Settings lists links to footnotes abd endnotes which presumably adds them to the
  </w:styles>
 ```
 
-We are interested in style changes, only if we are looking for style changes. In this case the change can be reverted.
+We are interested in style changes, only if we are looking for style changes. In this case, the change can be reverted.
 
 #### word/footer1.xml
 
@@ -432,11 +432,11 @@ The analysis of all the changes results in the following assumptions:
 - In `word/_rels/document.xml.rels` we need to add a link to footer
 - In `word/document.xml` to `<w:sectPr>` tag we need to add `<w:footerReference>`
 
-This assumptions reduce the diff to this set of changes:
+These assumptions reduce the diff to this set of changes:
 
 ![final diff](https://habrastorage.org/files/5d3/4fc/b84/5d34fcb8479244b198bc82507f61100a.PNG)
 
-Then pack [document](https://github.com/eduard93/docx/releases/download/v1.0.0/footer.docx) and open it. If everything was done correctly, the document will open and there will be footer with text ‘123’. And here is the final [commit](https://github.com/eduard93/docx/commit/1f794a5cdba458b60466d8c1ca9a16e252b44e59).
+Then pack [document](https://github.com/eduard93/docx/releases/download/v1.0.0/footer.docx) and open it. If everything was done correctly, the document will open and there will be a footer with text ‘123’. And here is the final [commit](https://github.com/eduard93/docx/commit/1f794a5cdba458b60466d8c1ca9a16e252b44e59).
 
 Thus, the process of change detection is reduced to determining a minimum set of changes sufficient to achieve the desired result.
 
@@ -447,7 +447,7 @@ After we find the necessary change, it is logical to proceed to the next stage, 
 - Parsing docx
 - Converting docx
 
-And for that we need [XSLT](https://ru.wikipedia.org/wiki/XSLT) and [XPath](https://ru.wikipedia.org/wiki/XPath). 
+And for that, we need [XSLT](https://ru.wikipedia.org/wiki/XSLT) and [XPath](https://ru.wikipedia.org/wiki/XPath). 
 
 Let's write a fairly simple conversion - replacement or addition of footer for a document.
 
@@ -487,7 +487,7 @@ Input receives the footer text, we will write it to `in.xml` file:
 <xml>TEST</xml>
 ```
 
-In XSLT (file `footer.xsl`) we will create footer with text from xml tag (some namespaces are omitted, here is the [full list](https://github.com/intersystems-ru/Converter/blob/master/Converter/Footer.cls.xml#L327)): 
+In XSLT (file `footer.xsl`) we will create a footer with text from xml tag (some namespaces are omitted, here is the [full list](https://github.com/intersystems-ru/Converter/blob/master/Converter/Footer.cls.xml#L327)): 
 ```xml
 <xsl:stylesheet 
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
@@ -617,16 +617,16 @@ Where:
 
 ## Conclusions
 
-Using only XSLT and ZIP, you can successfully work with docx documents, xlsx tables and pptx presentations.
+Using only XSLT and ZIP, you can successfully work with docx documents, xlsx tables, and pptx presentations.
 
 ## Open questions
 
 1. Do you generate or parse xlsx, docx? If so, how? 
-2. I`m looking for XSD files with schemas of ECMA-367 of version 5 and comments. The XSD of fifth version is available for download on ECMA site. But it is difficult to comprehend it without any comments. The XSD of the second version is available with comments.
+2. I`m looking for XSD files with schemas of ECMA-367 of version 5 and comments. The XSD of the fifth version is available for download on ECMA site. But it is difficult to comprehend it without any comments. The XSD of the second version is available with comments.
 
 ## Links
 - [ECMA-376](http://www.ecma-international.org/publications/standards/Ecma-376.htm)
-- [docx discription](https://msdn.microsoft.com/en-us/library/aa338205.aspx)
+- [docx description](https://msdn.microsoft.com/en-us/library/aa338205.aspx)
 - [Detailed article about docx](https://www.toptal.com/xml/an-informal-introduction-to-docx)
 - [Repository with scripts](https://github.com/eduard93/docx)
-- [Repository with footerconverter](https://github.com/intersystems-ru/Converter/)
+- [Repository with footer editor](https://github.com/intersystems-ru/Converter/)
