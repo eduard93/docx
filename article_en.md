@@ -1,16 +1,16 @@
 # Parsing docx with the help of XSLT
 
-The task of handling office documents, namely docx documents, xlsx tables and pptx presentations is quite complicated. This article is about parsing, creating and editing documents using only XSLT and ZIP.
+The task of handling office documents, namely docx documents, xlsx tables and pptx presentations is quite complicated. This article offers a way to parse, create and edit documents using only XSLT and ZIP.
 
 Why?
-docx is the most popular document format, so the ability to generate and parse this format  can always can be useful. The solution in a form of a ready-made library, can be inappropriate for several reasons:
+docx is the most popular document format, so the ability to generate and parse this format would always can be useful. The solution in a form of a ready-made library, can be problematic for several reasons:
 - library may not exist
 - you do not need another black box in your project 
 - restrictions of the library: platforms, etc.
 - licensing 
 - processing speed
 
-So, in this article I would use only basic tools for working with the docx documents.
+So, in this article I would use only basic tools for work with the docx documents.
 
 ## Docx structure
 What is a docx document? A docx file is a zip archive which physically contains 2 types of files:
@@ -22,19 +22,18 @@ And logically of 3 types of elements:
 - Parts - separate document parts. For docx document it is `document.xml`, including xml documents and media files.
 - Relationships identify document parts for linkage (e.g. connection between document section and page header), external parts are also defined here (e.g. hyperlinks).
 
-
 It is described in detail in the [ECMA-376: Office Open XML File Formats](http://www.ecma-international.org/publications/standards/Ecma-376.htm), the main part of it is the [PDF document](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-376,%20Fifth%20Edition,%20Part%201%20-%20Fundamentals%20And%20Markup%20Language%20Reference.zip) consisting of 5,000 pages, there are also 2,000 pages of bonus content.
 
 ## Minimal docx
 
-[The simplest docx](https://github.com/eduard93/docx/releases/download/v1.0.0/minimal.docx) after unpacking looks like:
+[The simplest docx](https://github.com/eduard93/docx/releases/download/v1.0.0/minimal.docx) after unpacking looks like this:
 
 ![image](https://habrastorage.org/files/ce5/f66/840/ce5f66840d3f4df484e083998829618c.PNG)
 
-Let's take a [look](https://github.com/eduard93/docx/commit/5313b19d6b14392fee217f66afb11866fe738067) at it.
+Let's take a [look](https://github.com/eduard93/docx/commit/5313b19d6b14392fee217f66afb11866fe738067) inside.
 
 #### [Content_Types].xml
-This file is located in document root and lists all MIME types of the document:
+This file is located in the document root and lists all MIME types present in the document:
 
 ```xml
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -47,7 +46,7 @@ This file is located in document root and lists all MIME types of the document:
 
 #### _rels/.rels
 
-The main list of document links. In this case, only one defined link exists - matching `rId1` identifier and `word/document.xml` file - the main body of the document.
+The main list of document parts. In this case, only one defined link exists - matching `rId1` identifier and `word/document.xml` file - the main body of the document.
 ```xml
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
     <Relationship 
@@ -107,23 +106,23 @@ Here:
 When you open this document in a text editor, you will see a document with a single word `Test`.
 
 #### word/_rels/document.xml.rels
-Contains a list of links of `word/document.xml` part. Name of link file is created from the name title of document part, to which it belongs, with `rels` extension. A folder with link file is called `_rels`, and it is placed at the same level as a part to which it relates. There is no links in `word/document.xml`, so the file is empty:
+Contains a list of links of `word/document.xml` part. Name of a link file is created from the filename of the document part, to which it belongs, with `rels` extension. A folder with link file is called `_rels`, and it is placed at the same level as a part to which it relates. There are no links in `word/document.xml`, so the file is empty:
 
 ```xml
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 </Relationships>
 ```
-Even if there is no links, this file must exist.
+Even if there are no links, this file must exist.
 
 ## docx and Microsoft Word
-[docx](https://github.com/eduard93/docx/releases/download/v1.0.0/word.docx) created with Microsoft Word or any other editor has [several additional files](https://github.com/eduard93/docx/commit/5313b19d6b14392fee217f66afb11866fe738067).
+[docx](https://github.com/eduard93/docx/releases/download/v1.0.0/word.docx) created with Microsoft Word or any other editor contains [several additional files](https://github.com/eduard93/docx/commit/5313b19d6b14392fee217f66afb11866fe738067).
 
 ![image](https://habrastorage.org/files/585/503/504/58550350424d4977910f9424a4af3104.PNG)
 
-These files contain: 
+These files are: 
 - `docProps/core.xml` - the basic document metadata according to  [Open Packaging Conventions](https://en.wikipedia.org/wiki/Open_Packaging_Conventions) and Dublin Core  [[1]](http://dublincore.org/documents/dcmi-terms/), [[2]](http://dublincore.org/documents/dces/).
--  `docProps/app.xml` - [general information about document](http://www.datypic.com/sc/ooxml/e-extended-properties_Properties.html): number of pages, words, characters, application in which document was created, etc.
-- `word/settings.xml` - [settings for the current document](http://www.datypic.com/sc/ooxml/e-w_settings.html).
+-  `docProps/app.xml` - [general information about the document](http://www.datypic.com/sc/ooxml/e-extended-properties_Properties.html): number of pages, words, characters, application in which document was created, etc.
+- `word/settings.xml` - [settings for the document](http://www.datypic.com/sc/ooxml/e-w_settings.html).
 - `word/styles.xml` - [styles](http://www.datypic.com/sc/ooxml/e-w_styles.html) applied to the document. Separates data from view.
 - `word/webSettings.xml` - HTML display [settings](http://www.datypic.com/sc/ooxml/e-w_webSettings.html)  and document conversion settings to HTML. 
 - `word/fontTable.xml` - [list](http://www.datypic.com/sc/ooxml/e-w_fonts.html) of document fonts.
@@ -134,46 +133,47 @@ Complex documents usually have more parts.
 ## Reverse engineering docx
 
 The initial task is to find out how any document fragment is stored in xml, then to create (or parse) such documents on our own. We need:
-- Zip Archiver
-- Library for XML formatting (Word gives XML without indents, one line)
+- Zip archiver
+- Library for XML formatting (Word gives XML without indents, all in one line)
 - A tool for viewing diff between files, I use git and TortoiseGit
 
 #### Tools
-- For Windows:  [zip](http://gnuwin32.sourceforge.net/packages/zip.htm),  [unzip](http://gnuwin32.sourceforge.net/packages/unzip.htm), [libxml2](http://xmlsoft.org/downloads.html), [git](https://git-scm.com/download/win), [TortoiseGit](https://tortoisegit.org/download/)
-- For Linux: ```apt-get install zip unzip libxml2 libxml2-utils git```
+- For Windows: [zip](http://gnuwin32.sourceforge.net/packages/zip.htm), [unzip](http://gnuwin32.sourceforge.net/packages/unzip.htm), [libxml2](http://xmlsoft.org/downloads.html), [git](https://git-scm.com/download/win), [TortoiseGit](https://tortoisegit.org/download/)
+- For Linux: `apt-get install zip unzip libxml2 libxml2-utils git`
 
-Also [scripts](https://github.com/eduard93/docx/commit/6b41b0e459329d62d0736aa6dc5a7b02e7398dcd) will be necessary for automatic archiving/dearching and XML formatting. 
-Using on Windows:
+Also [scripts](https://github.com/eduard93/docx/commit/6b41b0e459329d62d0736aa6dc5a7b02e7398dcd) will be necessary for automatic archiving and XML formatting. 
+Usage on Windows:
 -  `unpack file dir` - unpacks document `file` in folder `dir` and formats xml
 -  `pack dir file` - pack folder `dir` in document `file`
 
-Using on Linux is similar, but `./unpack.sh` instead of `unpack`, and `pack` becomes `./pack`.
+Usage on Linux is similar, but use `./unpack.sh` instead of `unpack`, and `pack` becomes `./pack`.
 
 #### Use
 
 To search for changes:
 1. Create an empty docx file in the editor. 
-2. Unpack it using `unpack` in new folder. 
+2. Unpack it using `unpack` into the new folder. 
 3. Commit new folder. 
 4. Add things you need  (hyperlink, table, etc.) to the document from step 1. 
 5. Unpack modified file into an existing folder. 
 6. Explore diff, removing unnecessary changes (links permutation, order of namespaces, etc.). 
-7. Pack folder and check that it opens. 
+7. Pack folder into document and check that it opens. 
 8. Commit changed folder.
 
 #### Example 1. Bold text
 
-As a first example we'll search for a tag that maxes text bold.
+As a first example we'll search for a tag that makes text bold.
 
 1.	Create `bold.docx` document with normal (not bold) text `Test`.
 2.	Unpack it: `unpack bold.docx bold`.
 3.	[Commit the result](https://github.com/eduard93/docx/commit/910ea3fb0f1667ce2722da491b27c4e12474c8ec).
-4.	Maske `Test` text bold.
+4.	Make `Test` text bold.
 5.	Unpack it: `unpack bold.docx bold`.
 6.	Initially, the diff was as follows:
 
 ![diff](https://habrastorage.org/files/059/659/38c/05965938c8c64bbea20cb47fb5c6d457.PNG)
-In detail: 
+
+Let's examine it in detail: 
 
 #### docProps/app.xml
 
@@ -223,12 +223,12 @@ Document version and modification date changes are irrelevant.
 +    <w:sectPr w:rsidR="0076695C" w:rsidRPr="00F752CF">
 ```
 
-Changes in `w:rsidR` are unnecessary - it is inside information for Microsoft Word. The main change here:
+Changes in `w:rsidR` are unnecessary - it is utility information for Microsoft Word. The main change here:
 ```diff
          <w:rPr>
 +          <w:b/>
 ```
-in the paragraph with Test. Apparently element `<w:b/>` makes the text bold. Let's remember this change and revert the rest.
+in the paragraph with Test. Apparently element `<w:b/>` makes the text bold. Let's save this change and revert the rest.
 
 #### word/settings.xml
 
@@ -246,8 +246,8 @@ It does not contain anything related to the bold text. Revert.
 
 #### Example 2. Footer
 
-Let's move on to a more complex example - adding footer.
-[Initial commit](https://github.com/eduard93/docx/commit/0cd149e7cdab4e816a82a9128dbc5cfe89d74a97). Add footer text ‘123’ and unpack the document. Such initial diff looks like: 
+Let's move on to a more complex example - adding footer to document.
+[Initial commit](https://github.com/eduard93/docx/commit/0cd149e7cdab4e816a82a9128dbc5cfe89d74a97). Add footer text ‘123’ and unpack the document. Initial diff looks like this: 
 
 ![diff](https://habrastorage.org/files/478/e62/048/478e62048c12443481a00783f164bebe.PNG)
 
@@ -264,7 +264,7 @@ Immediately revert changes in `docProps/app.xml` and `docProps/core.xml` – sam
 +  <Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>
 ```
 
-footer clearly looks like what we need, but what should we do with footnotes and endnotes? Are they required for adding footer, or are the just a byproduct created at the same time? Finding the answer is not always easy, here are the main approaches: 
+footer clearly looks like what we need, but what should we do with footnotes and endnotes? Are they required for adding footer, or are the just a byproduct created at the same time? Discerning the answer is not always easy, here are the main approaches: 
 - Explore the changes: are they connected with each other?
 - Experiment
 - Finally, if you do not understand what's going on: 
@@ -272,7 +272,7 @@ footer clearly looks like what we need, but what should we do with footnotes and
 ![Read the documentation](http://www.commitstrip.com/wp-content/uploads/2015/06/Strip-Lire-la-documentation-650-finalenglish.jpg)
 
 #### word/_rels/document.xml.rels
-Initial diff looks like:
+Initial diff looks like this:
 
 ```diff
 @@ -1,8 +1,11 @@
@@ -291,7 +291,7 @@ Initial diff looks like:
  </Relationships>
 ```
 
-As we see some of changes are due to fact that Word has changed link order, let's remove them and make diff smaller:
+As we see some of the changes are due to the fact that Word has changed links order, let's restore the order and make diff smaller:
 ```diff
 @@ -3,6 +3,9 @@
 +  <Relationship Id="rId6" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>
@@ -315,7 +315,7 @@ footer, footnotes, endnotes appear again. All of them are connected with main do
        <w:docGrid w:linePitch="360"/>
      </w:sectPr>
 ```
-For a change there are only necessary changes – a explicit link to footer in [sectPr](http://www.datypic.com/sc/ooxml/e-w_sectPr-3.html). There are no links to footnotes and endnotes in document, so we can assume links are not necessary.
+For a change there are only necessary changes – an explicit link to footer in [sectPr](http://www.datypic.com/sc/ooxml/e-w_sectPr-3.html). There are no links to footnotes and endnotes in document, so we can assume they are not necessary.
 
 #### word/settings.xml
 
@@ -347,7 +347,7 @@ For a change there are only necessary changes – a explicit link to footer in [
 +    <w:rsid w:val="000A7B7B"/>
 +    <w:rsid w:val="001B0DE6"/>
 ```
-Settings lists links to footnotes, endnotes which adds them to the document. Note that footer does not appear here.
+Settings lists links to footnotes abd endnotes which presumably adds them to the document. Note that footer does not appear here.
 
 #### word/styles.xml
 
@@ -405,11 +405,11 @@ Settings lists links to footnotes, endnotes which adds them to the document. Not
  </w:styles>
 ```
 
-We are interested in style changes, only if we are looking for style changes. In this case, this change can be reverted.
+We are interested in style changes, only if we are looking for style changes. In this case the change can be reverted.
 
 #### word/footer1.xml
 
-Take a look at footer itself (some namespaces are omitted for readability, but the should appear in the document):
+Take a look at footer itself (some namespaces are omitted for readability, but they should be present in the document):
 
 ```xml
 <w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
@@ -426,22 +426,23 @@ Take a look at footer itself (some namespaces are omitted for readability, but t
 Here is the footer text: ‘123’. As we don't track style changes in this example we need to remove the link to `<w:pStyle w:val="a6"/>`. 
 
 The analysis of all the changes results in the following assumptions:
-- footnotes and endnotes are unnecessary
-- In `[Content_Types].xml` we need to add footer
+- Fotnotes and endnotes are unnecessary
+- We need to add `word/footer1.xml` file
+- In `[Content_Types].xml` we need to add a link to footer
 - In `word/_rels/document.xml.rels` we need to add a link to footer
 - In `word/document.xml` to `<w:sectPr>` tag we need to add `<w:footerReference>`
 
-Reduce the diff to this set of changes:
+This assumptions reduce the diff to this set of changes:
 
 ![final diff](https://habrastorage.org/files/5d3/4fc/b84/5d34fcb8479244b198bc82507f61100a.PNG)
 
-Then pack [document](https://github.com/eduard93/docx/releases/download/v1.0.0/footer.docx) and open it. If everything was done correctly, the document will be opened and there will be footer with text ‘123’. And here is the final [commit](https://github.com/eduard93/docx/commit/1f794a5cdba458b60466d8c1ca9a16e252b44e59).
+Then pack [document](https://github.com/eduard93/docx/releases/download/v1.0.0/footer.docx) and open it. If everything was done correctly, the document will open and there will be footer with text ‘123’. And here is the final [commit](https://github.com/eduard93/docx/commit/1f794a5cdba458b60466d8c1ca9a16e252b44e59).
 
 Thus, the process of change detection is reduced to determining a minimum set of changes sufficient to achieve the desired result.
 
 ## Practice
 
-If we find necessary change, it is logical to proceed to the next stage, it could be any of:
+After we find the necessary change, it is logical to proceed to the next stage, it could be any of:
 - Creating docx
 - Parsing docx
 - Converting docx
@@ -481,12 +482,12 @@ ClassMethod executeUnzip(source, targetDir) As %Status
 
 #### Creation of footer file
 
-Input receives the footer text, we will write it to in.xml file:
+Input receives the footer text, we will write it to `in.xml` file:
 ```xml
 <xml>TEST</xml>
 ```
 
-In XSLT (file footer.xsl) we will create footer with text from xml tag (some namespaces are omitted, here is the [full list](https://github.com/intersystems-ru/Converter/blob/master/Converter/Footer.cls.xml#L327)): 
+In XSLT (file `footer.xsl`) we will create footer with text from xml tag (some namespaces are omitted, here is the [full list](https://github.com/intersystems-ru/Converter/blob/master/Converter/Footer.cls.xml#L327)): 
 ```xml
 <xsl:stylesheet 
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
@@ -554,7 +555,7 @@ Add a link to `footer0.xml` with rId0 ID in `word/_rels/document.xml.rels`:
 
 #### Specify links in document
 
-Next, it is necessary in each `<w:sectPr>` tag add `<w:footerReference>` tag or replace a link in it with link to our footer. [It turns out](https://msdn.microsoft.com/en-us/library/documentformat.openxml.wordprocessing.footerreference(v=office.14).aspx) that each `<w:sectPr>` tag can have 3 different `<w:footerReference>` tags - for the first page, even pages and the rest:
+Next, it is necessary in each `<w:sectPr>` tag to add `<w:footerReference>` tag or replace a link in it with the link to our footer. [It turns out](https://msdn.microsoft.com/en-us/library/documentformat.openxml.wordprocessing.footerreference(v=office.14).aspx) that each `<w:sectPr>` tag can have 3 different `<w:footerReference>` tags - for the first page, even pages and the rest:
 
 ```xml
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
@@ -620,8 +621,8 @@ Using only XSLT and ZIP, you can successfully work with docx documents, xlsx tab
 
 ## Open questions
 
-1. Do you generate or parce xlsx, docx? If so, how? 
-2. I`m looking for XSD with schemas ECMA-367 of version 5 and comments. The XSD of fifth version is available for download on ECMA site. But it is difficult to comprehend it without any comments. The XSD of the second version is available with comments.
+1. Do you generate or parse xlsx, docx? If so, how? 
+2. I`m looking for XSD files with schemas of ECMA-367 of version 5 and comments. The XSD of fifth version is available for download on ECMA site. But it is difficult to comprehend it without any comments. The XSD of the second version is available with comments.
 
 ## Links
 - [ECMA-376](http://www.ecma-international.org/publications/standards/Ecma-376.htm)
