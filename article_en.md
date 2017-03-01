@@ -1,4 +1,4 @@
-# Parsing docx with the help of XSLT
+# Parsing docx using XSLT
 
 The task of handling office documents, namely docx documents, xlsx tables and pptx presentations is quite complicated. This article offers a way to parse, create and edit documents using only XSLT and ZIP.
 
